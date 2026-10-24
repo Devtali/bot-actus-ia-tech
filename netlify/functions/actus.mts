@@ -1,6 +1,8 @@
 import type { Config } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
 import { XMLParser } from "fast-xml-parser";
+import { db } from "../../db/index.js";
+import { executions, publications, type EtatSource } from "../../db/schema.js";
 
 // ---- Réglages -------------------------------------------------------------
 const FLUX: Record<string, string> = {
@@ -43,7 +45,10 @@ function lienDe(e: any): string {
   return choix?.["@_href"] ?? texte(choix);
 }
 
-async function lireFlux(source: string, url: string): Promise<Article[]> {
+async function lireFlux(
+  source: string,
+  url: string
+): Promise<{ articles: Article[]; erreur?: string }> {
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(8000),
@@ -54,7 +59,7 @@ async function lireFlux(source: string, url: string): Promise<Article[]> {
     const brut = doc?.rss?.channel?.item ?? doc?.feed?.entry ?? [];
     const items: any[] = Array.isArray(brut) ? brut : [brut];
 
-    return items.slice(0, 10).map((e) => {
+    const articles = items.slice(0, 10).map((e) => {
       const date = Date.parse(
         texte(e.pubDate ?? e.published ?? e.updated ?? e["dc:date"])
       );
@@ -71,9 +76,10 @@ async function lireFlux(source: string, url: string): Promise<Article[]> {
         date: Number.isNaN(date) ? Date.now() : date,
       };
     }).filter((a) => a.lien && a.titre);
+    return { articles };
   } catch (err) {
     console.error(`Flux « ${source} » indisponible :`, err);
-    return [];
+    return { articles: [], erreur: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -94,12 +100,39 @@ async function envoyer(token: string, canal: string, message: string): Promise<b
   return res.ok;
 }
 
+// Journal pour le tableau de bord : une erreur de base ne doit jamais
+// empêcher le bot de publier.
+async function journaliser(
+  execution: typeof executions.$inferInsert,
+  articles: Article[]
+): Promise<void> {
+  try {
+    await db.insert(executions).values(execution);
+    if (articles.length) {
+      await db.insert(publications).values(
+        articles.map((a) => ({
+          source: a.source,
+          titre: a.titre,
+          lien: a.lien,
+          resume: a.resume,
+          dateArticle: new Date(a.date),
+        }))
+      );
+    }
+  } catch (err) {
+    console.error("Journalisation impossible :", err);
+  }
+}
+
 // ---- Fonction planifiée ---------------------------------------------------
 export default async () => {
+  const debut = Date.now();
   const token = Netlify.env.get("BOT_TOKEN");
   const canal = Netlify.env.get("CHANNEL_ID");
   if (!token || !canal) {
-    console.error("BOT_TOKEN ou CHANNEL_ID manquant (portée « Functions » requise).");
+    const erreur = "BOT_TOKEN ou CHANNEL_ID manquant (portée « Functions » requise).";
+    console.error(erreur);
+    await journaliser({ demarreLe: new Date(debut), erreur }, []);
     return;
   }
 
@@ -109,9 +142,14 @@ export default async () => {
   const premierPassage = vusBrut === null;
   const vus = new Set<string>(vusBrut ?? []);
 
-  const tous = (
-    await Promise.all(Object.entries(FLUX).map(([s, u]) => lireFlux(s, u)))
-  ).flat();
+  const lectures = await Promise.all(
+    Object.entries(FLUX).map(async ([s, u]) => [s, await lireFlux(s, u)] as const)
+  );
+  const tous = lectures.flatMap(([, r]) => r.articles);
+  const sources: Record<string, EtatSource> = {};
+  for (const [s, r] of lectures) {
+    sources[s] = { ok: !r.erreur, articles: r.articles.length, ...(r.erreur && { erreur: r.erreur }) };
+  }
 
   // Nouveaux articles récents, sans doublons, du plus récent au plus ancien
   const uniques = new Map<string, Article>();
@@ -121,12 +159,17 @@ export default async () => {
   const frais = [...uniques.values()].sort((a, b) => b.date - a.date);
 
   let publies = 0;
+  let echecsEnvoi = 0;
+  const envoyes: Article[] = [];
   for (const a of frais) {
     if (publies >= MAX_PAR_PASSAGE) break;
     if (await envoyer(token, canal, formater(a))) {
       vus.add(a.lien);
+      envoyes.push(a);
       publies++;
       await dormir(1000); // évite le flood Telegram
+    } else {
+      echecsEnvoi++;
     }
   }
 
@@ -136,6 +179,19 @@ export default async () => {
 
   await store.setJSON("vus", [...vus].slice(-2000));
   console.log(`${publies} article(s) publié(s) sur ${frais.length} nouveau(x).`);
+
+  await journaliser(
+    {
+      demarreLe: new Date(debut),
+      dureeMs: Date.now() - debut,
+      articlesLus: tous.length,
+      nouveaux: frais.length,
+      publies,
+      echecsEnvoi,
+      sources,
+    },
+    envoyes
+  );
 };
 
 export const config: Config = {
