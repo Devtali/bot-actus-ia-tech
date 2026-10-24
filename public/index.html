@@ -1,5 +1,413 @@
 <!doctype html>
 <html lang="fr">
-<head><meta charset="utf-8"><title>Bot actus IA &amp; tech</title></head>
-<body><p>Bot d’actualités IA &amp; tech actif.</p></body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableau de bord · Bot actus IA &amp; tech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --papier: #f4f1ea;
+    --carte: #fbfaf6;
+    --encre: #16150f;
+    --gris: #6d6a60;
+    --filet: #d9d4c7;
+    --rouge: #d8361f;
+    --rouge-pale: #f3c9bf;
+    --vert: #2f7d4f;
+    --ambre: #c98a12;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--papier);
+    color: var(--encre);
+    font: 15px/1.5 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .35;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .page { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; padding: 28px 28px 64px; }
+
+  /* En-tête façon une de journal */
+  header { border-bottom: 3px double var(--encre); padding-bottom: 18px; margin-bottom: 28px; }
+  .bandeau { display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--gris);
+    border-bottom: 1px solid var(--encre); padding-bottom: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .direct { display: inline-flex; align-items: center; gap: 8px; color: var(--encre); }
+  .direct i { width: 8px; height: 8px; border-radius: 50%; background: var(--vert); animation: pouls 2s infinite; }
+  .direct.ko i { background: var(--rouge); animation: none; }
+  @keyframes pouls { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+  h1 { font: 800 clamp(40px, 7vw, 88px)/.92 var(--serif); letter-spacing: -.03em; margin: 0; font-variation-settings: "opsz" 144; }
+  h1 em { font-style: normal; color: var(--rouge); }
+  .chapo { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; margin-top: 14px; }
+  .chapo p { margin: 0; max-width: 560px; color: var(--gris); font-size: 16px; }
+  button {
+    font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .08em;
+    background: var(--encre); color: var(--papier); border: 0; padding: 10px 16px; cursor: pointer;
+    transition: transform .15s, background .15s;
+  }
+  button:hover { background: var(--rouge); }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 2px solid var(--rouge); outline-offset: 3px; }
+
+  /* Grille */
+  .grille { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+  .bloc { background: var(--carte); border: 1px solid var(--filet); padding: 20px 22px;
+    opacity: 0; transform: translateY(10px); animation: entree .6s cubic-bezier(.2,.7,.2,1) forwards; }
+  .bloc:nth-child(2) { animation-delay: .06s } .bloc:nth-child(3) { animation-delay: .12s }
+  .bloc:nth-child(4) { animation-delay: .18s } .bloc:nth-child(5) { animation-delay: .24s }
+  .bloc:nth-child(6) { animation-delay: .30s } .bloc:nth-child(7) { animation-delay: .36s }
+  .bloc:nth-child(8) { animation-delay: .42s } .bloc:nth-child(9) { animation-delay: .48s }
+  @keyframes entree { to { opacity: 1; transform: none; } }
+  .c3 { grid-column: span 3 } .c4 { grid-column: span 4 } .c5 { grid-column: span 5 }
+  .c7 { grid-column: span 7 } .c8 { grid-column: span 8 } .c12 { grid-column: span 12 }
+  h2 { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--gris);
+    margin: 0 0 14px; display: flex; justify-content: space-between; gap: 12px; }
+  h2 span { color: var(--encre); }
+
+  /* Chiffres clés */
+  .kpi .valeur { font: 600 52px/1 var(--serif); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .kpi .sous { margin-top: 8px; font: 12px var(--mono); color: var(--gris); }
+  .kpi.une { background: var(--encre); color: var(--papier); border-color: var(--encre); }
+  .kpi.une h2, .kpi.une .sous { color: #a8a497; }
+  .kpi.une .valeur { color: #fff; }
+
+  /* Graphiques */
+  svg { display: block; width: 100%; overflow: visible; }
+  .axe text { font: 10px var(--mono); fill: var(--gris); }
+  .axe line { stroke: var(--filet); }
+  .barre { fill: var(--encre); transition: fill .15s; }
+  .barre.vide { fill: var(--filet); }
+  .barre:hover, .barre.actif { fill: var(--rouge); }
+  .infobulle { position: fixed; pointer-events: none; background: var(--encre); color: var(--papier);
+    font: 12px var(--mono); padding: 6px 9px; z-index: 10; opacity: 0; transition: opacity .1s; white-space: nowrap; }
+
+  .sources-barres { display: grid; gap: 10px; }
+  .sb { display: grid; grid-template-columns: 130px 1fr 34px; align-items: center; gap: 10px; font-size: 13px; }
+  .sb .nom { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sb .piste { height: 12px; background: var(--papier); }
+  .sb .plein { height: 100%; background: var(--encre); transform-origin: left; animation: pousse .8s cubic-bezier(.2,.7,.2,1) both; }
+  .sb .n { font: 500 13px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+  @keyframes pousse { from { transform: scaleX(0) } }
+
+  /* Ruban des exécutions */
+  .ruban { display: grid; grid-template-columns: repeat(48, 1fr); gap: 3px; }
+  .ruban div { aspect-ratio: 1 / 2.4; background: var(--filet); cursor: default; transition: transform .15s; }
+  .ruban div:hover { transform: scaleY(1.12); }
+  .ruban .p1 { background: #9b978b } .ruban .p2 { background: #5c594f } .ruban .p3 { background: var(--encre) }
+  .ruban .ko { background: var(--rouge) }
+  .legende { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font: 11px var(--mono); color: var(--gris); }
+  .legende b { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+
+  /* État des flux */
+  .flux { list-style: none; margin: 0; padding: 0; }
+  .flux li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid var(--filet); font-size: 13px; }
+  .flux li:first-child { border-top: 0; }
+  .etat { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+  .etat.ok { color: var(--vert); } .etat.ko { color: var(--rouge); }
+
+  /* Fil des publications */
+  .fil { list-style: none; margin: 0; padding: 0; max-height: 540px; overflow-y: auto; }
+  .fil li { display: grid; grid-template-columns: 64px 1fr; gap: 14px; padding: 13px 0; border-top: 1px solid var(--filet); }
+  .fil li:first-child { border-top: 0; padding-top: 0; }
+  .fil time { font: 12px var(--mono); color: var(--gris); padding-top: 3px; }
+  .fil a { color: var(--encre); text-decoration: none; font: 600 17px/1.3 var(--serif); }
+  .fil a:hover { color: var(--rouge); text-decoration: underline; text-underline-offset: 3px; }
+  .fil .src { display: block; margin-top: 4px; font: 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--rouge); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--gris); padding: 0 8px 8px 0; border-bottom: 1px solid var(--encre); }
+  td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--filet); font-variant-numeric: tabular-nums; }
+  td.num, th.num { text-align: right; }
+  .table-defile { max-height: 320px; overflow-y: auto; }
+
+  /* États */
+  .squelette { background: linear-gradient(90deg, var(--filet) 0 40%, #e9e5da 50%, var(--filet) 60% 100%) 0 0 / 300% 100%;
+    animation: miroir 1.4s linear infinite; color: transparent !important; border-radius: 2px; }
+  @keyframes miroir { to { background-position: -150% 0 } }
+  .vide { padding: 28px 0; text-align: center; color: var(--gris); font-size: 14px; }
+  .vide strong { display: block; font: 600 20px var(--serif); color: var(--encre); margin-bottom: 4px; }
+  .alerte { display: none; border: 1px solid var(--rouge); background: #fbe9e5; color: #8a1f10; padding: 12px 16px; margin-bottom: 20px; font-size: 14px; }
+
+  footer { margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--encre); font: 11px var(--mono); color: var(--gris); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  @media (max-width: 960px) {
+    .c3 { grid-column: span 6 } .c4, .c5, .c7, .c8 { grid-column: span 12 }
+  }
+  @media (max-width: 560px) {
+    .page { padding: 18px 16px 48px; }
+    .c3 { grid-column: span 12 }
+    .ruban { grid-template-columns: repeat(24, 1fr); }
+    .sb { grid-template-columns: 100px 1fr 30px; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; opacity: 1 !important; transform: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="bandeau">
+      <span class="direct" id="direct"><i></i><span id="direct-texte">Connexion…</span></span>
+      <span id="date-du-jour"></span>
+    </div>
+    <h1>Le fil <em>IA</em> &amp; tech</h1>
+    <div class="chapo">
+      <p>Tableau de bord du bot Telegram qui relaie l’actualité de l’intelligence artificielle et de la tech, toutes les 30 minutes.</p>
+      <button id="rafraichir" type="button">↻ Actualiser</button>
+    </div>
+  </header>
+
+  <div class="alerte" id="alerte" role="alert"></div>
+
+  <main class="grille">
+    <section class="bloc kpi une c3"><h2>Publiés · 24 h</h2><div class="valeur" id="k-24h">—</div><div class="sous" id="k-24h-sous">&nbsp;</div></section>
+    <section class="bloc kpi c3"><h2>Publiés · 7 jours</h2><div class="valeur" id="k-7j">—</div><div class="sous" id="k-7j-sous">&nbsp;</div></section>
+    <section class="bloc kpi c3"><h2>Total publiés</h2><div class="valeur" id="k-total">—</div><div class="sous" id="k-total-sous">&nbsp;</div></section>
+    <section class="bloc kpi c3"><h2>Dernier passage</h2><div class="valeur" id="k-dernier">—</div><div class="sous" id="k-dernier-sous">&nbsp;</div></section>
+
+    <section class="bloc c8">
+      <h2>Publications par jour <span>30 derniers jours</span></h2>
+      <div id="graphe-jours" style="min-height:220px"></div>
+    </section>
+    <section class="bloc c4">
+      <h2>Par source <span>30 jours</span></h2>
+      <div id="graphe-sources" class="sources-barres"></div>
+    </section>
+
+    <section class="bloc c8">
+      <h2>Exécutions récentes <span id="exec-portee">48 derniers passages</span></h2>
+      <div class="ruban" id="ruban"></div>
+      <div class="legende">
+        <span><b style="background:var(--filet)"></b>Aucune publication</span>
+        <span><b style="background:#9b978b"></b>1</span>
+        <span><b style="background:#5c594f"></b>2–3</span>
+        <span><b style="background:var(--encre)"></b>4+</span>
+        <span><b style="background:var(--rouge)"></b>Erreur</span>
+      </div>
+      <div class="table-defile" style="margin-top:18px">
+        <table>
+          <thead><tr><th>Heure</th><th class="num">Lus</th><th class="num">Nouveaux</th><th class="num">Publiés</th><th class="num">Durée</th><th>Remarque</th></tr></thead>
+          <tbody id="table-exec"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="bloc c4">
+      <h2>État des flux RSS <span id="flux-quand"></span></h2>
+      <ul class="flux" id="flux"></ul>
+    </section>
+
+    <section class="bloc c12">
+      <h2>Dernières publications sur le canal <span id="fil-compte"></span></h2>
+      <ul class="fil" id="fil"></ul>
+    </section>
+  </main>
+
+  <footer>
+    <span>Bot actus IA &amp; tech · actualisation automatique chaque minute</span>
+    <span id="genere"></span>
+  </footer>
+</div>
+<div class="infobulle" id="infobulle"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const nf = new Intl.NumberFormat("fr-FR");
+const heure = (d) => new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const jourCourt = (d) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+const SVGNS = "http://www.w3.org/2000/svg";
+
+function depuis(d) {
+  const s = Math.round((Date.now() - new Date(d)) / 1000);
+  if (s < 60) return "à l’instant";
+  const m = Math.round(s / 60); if (m < 60) return `il y a ${m} min`;
+  const h = Math.round(m / 60); if (h < 24) return `il y a ${h} h`;
+  return `il y a ${Math.round(h / 24)} j`;
+}
+
+const bulle = $("infobulle");
+function montrerBulle(e, texte) {
+  bulle.textContent = texte; bulle.style.opacity = 1;
+  const x = Math.min(e.clientX + 12, innerWidth - bulle.offsetWidth - 8);
+  bulle.style.left = x + "px"; bulle.style.top = (e.clientY - 36) + "px";
+}
+const cacherBulle = () => (bulle.style.opacity = 0);
+function attacherBulle(el, texte) {
+  el.addEventListener("mousemove", (e) => montrerBulle(e, texte));
+  el.addEventListener("mouseleave", cacherBulle);
+}
+
+function squelettes() {
+  ["k-24h", "k-7j", "k-total", "k-dernier"].forEach((id) => { $(id).textContent = "000"; $(id).classList.add("squelette"); });
+  $("graphe-jours").innerHTML = '<div class="squelette" style="height:200px"></div>';
+  $("graphe-sources").innerHTML = Array(5).fill('<div class="squelette" style="height:14px"></div>').join("");
+  $("ruban").innerHTML = Array(48).fill('<div class="squelette"></div>').join("");
+  $("flux").innerHTML = Array(6).fill('<li><span class="squelette">Source en attente</span></li>').join("");
+  $("fil").innerHTML = Array(4).fill('<li><time class="squelette">00:00</time><div class="squelette" style="height:22px"></div></li>').join("");
+}
+
+function grapheJours(serie) {
+  const zone = $("graphe-jours");
+  zone.innerHTML = "";
+  const L = Math.max(zone.clientWidth, 300), H = 220, mg = { h: 8, b: 24, g: 28 };
+  const max = Math.max(4, ...serie.map((d) => d.n));
+  const pas = Math.ceil(max / 4);
+  const haut = pas * 4;
+  const larg = (L - mg.g) / serie.length;
+  const y = (v) => mg.h + (H - mg.h - mg.b) * (1 - v / haut);
+  const svg = document.createElementNS(SVGNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${L} ${H}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Nombre d’articles publiés par jour sur 30 jours");
+  let html = '<g class="axe">';
+  for (let v = 0; v <= haut; v += pas) {
+    html += `<line x1="${mg.g}" x2="${L}" y1="${y(v)}" y2="${y(v)}"/><text x="${mg.g - 6}" y="${y(v) + 3}" text-anchor="end">${v}</text>`;
+  }
+  serie.forEach((d, i) => {
+    if (i % 5 === 4 || i === serie.length - 1) {
+      html += `<text x="${mg.g + i * larg + larg / 2}" y="${H - 6}" text-anchor="middle">${esc(jourCourt(d.jour + "T12:00:00Z"))}</text>`;
+    }
+  });
+  html += "</g>";
+  svg.innerHTML = html;
+  serie.forEach((d, i) => {
+    const r = document.createElementNS(SVGNS, "rect");
+    const hauteur = d.n ? y(0) - y(d.n) : 2;
+    r.setAttribute("x", mg.g + i * larg + larg * 0.18);
+    r.setAttribute("width", Math.max(larg * 0.64, 1));
+    r.setAttribute("y", y(0) - hauteur);
+    r.setAttribute("height", hauteur);
+    r.setAttribute("class", "barre" + (d.n ? "" : " vide") + (i === serie.length - 1 ? " actif" : ""));
+    attacherBulle(r, `${jourCourt(d.jour + "T12:00:00Z")} · ${d.n} article${d.n > 1 ? "s" : ""}`);
+    svg.appendChild(r);
+  });
+  zone.appendChild(svg);
+}
+
+function grapheSources(parSource) {
+  const zone = $("graphe-sources");
+  if (!parSource.length) { zone.innerHTML = '<div class="vide">Aucune publication sur la période.</div>'; return; }
+  const max = Math.max(...parSource.map((s) => s.n));
+  zone.innerHTML = parSource.map((s, i) => `
+    <div class="sb">
+      <span class="nom" title="${esc(s.source)}">${esc(s.source)}</span>
+      <div class="piste"><div class="plein" style="width:${(s.n / max) * 100}%;animation-delay:${i * 60}ms"></div></div>
+      <span class="n">${nf.format(s.n)}</span>
+    </div>`).join("");
+}
+
+function ruban(execs) {
+  const zone = $("ruban");
+  zone.innerHTML = "";
+  const ordre = [...execs].reverse();
+  const manquants = 48 - ordre.length;
+  for (let i = 0; i < manquants; i++) zone.appendChild(document.createElement("div"));
+  ordre.forEach((e) => {
+    const c = document.createElement("div");
+    const ko = e.erreur || e.echecsEnvoi > 0;
+    c.className = ko ? "ko" : e.publies >= 4 ? "p3" : e.publies >= 2 ? "p2" : e.publies === 1 ? "p1" : "";
+    attacherBulle(c, `${jourCourt(e.demarreLe)} ${heure(e.demarreLe)} · ${e.erreur ? "erreur" : e.publies + " publié(s)"}${e.echecsEnvoi ? ` · ${e.echecsEnvoi} échec(s) d’envoi` : ""}`);
+    zone.appendChild(c);
+  });
+  $("table-exec").innerHTML = execs.length ? execs.map((e) => {
+    const fluxKo = Object.entries(e.sources || {}).filter(([, s]) => !s.ok).map(([n]) => n);
+    const remarque = e.erreur ? `<span class="etat ko">${esc(e.erreur)}</span>`
+      : e.echecsEnvoi ? `<span class="etat ko">${e.echecsEnvoi} échec(s) Telegram</span>`
+      : fluxKo.length ? `<span class="etat ko">Flux en panne : ${esc(fluxKo.join(", "))}</span>`
+      : '<span class="etat ok">OK</span>';
+    return `<tr><td>${esc(jourCourt(e.demarreLe))} ${esc(heure(e.demarreLe))}</td><td class="num">${e.articlesLus}</td><td class="num">${e.nouveaux}</td><td class="num"><b>${e.publies}</b></td><td class="num">${(e.dureeMs / 1000).toFixed(1)} s</td><td>${remarque}</td></tr>`;
+  }).join("") : '<tr><td colspan="6"><div class="vide"><strong>Aucune exécution enregistrée</strong>Le bot passe toutes les 30 minutes : les premières données apparaîtront après son prochain passage.</div></td></tr>';
+}
+
+function etatFlux(sources, quand) {
+  const liste = Object.entries(sources);
+  $("flux-quand").textContent = quand ? depuis(quand) : "";
+  $("flux").innerHTML = liste.length ? liste.map(([nom, s]) => `
+    <li title="${esc(s.erreur || "")}">
+      <span>${esc(nom)}</span>
+      <span class="etat ${s.ok ? "ok" : "ko"}">${s.ok ? `● ${s.articles} lus` : "● Hors ligne"}</span>
+    </li>`).join("") : '<li><div class="vide" style="width:100%">En attente du premier passage du bot.</div></li>';
+}
+
+function fil(recentes) {
+  $("fil-compte").textContent = recentes.length ? `${recentes.length} plus récentes` : "";
+  $("fil").innerHTML = recentes.length ? recentes.map((a) => `
+    <li>
+      <time datetime="${esc(a.publieLe)}" title="${esc(new Date(a.publieLe).toLocaleString("fr-FR"))}">${esc(heure(a.publieLe))}<br>${esc(jourCourt(a.publieLe))}</time>
+      <div><a href="${esc(a.lien)}" target="_blank" rel="noopener">${esc(a.titre)}</a><span class="src">${esc(a.source)}</span></div>
+    </li>`).join("") : '<li style="display:block"><div class="vide"><strong>Le fil est encore vide</strong>Les articles publiés sur le canal Telegram s’afficheront ici.</div></li>';
+}
+
+let donnees = null;
+function afficher(d) {
+  donnees = d;
+  ["k-24h", "k-7j", "k-total", "k-dernier"].forEach((id) => $(id).classList.remove("squelette"));
+  const t = d.totaux || { total: 0, h24: 0, j7: 0 };
+  $("k-24h").textContent = nf.format(t.h24);
+  $("k-24h-sous").textContent = `${(t.h24 / 24).toFixed(1).replace(".", ",")} / heure en moyenne`;
+  $("k-7j").textContent = nf.format(t.j7);
+  $("k-7j-sous").textContent = `${(t.j7 / 7).toFixed(1).replace(".", ",")} / jour en moyenne`;
+  $("k-total").textContent = nf.format(t.total);
+  $("k-total-sous").textContent = `${d.parSource.length} source(s) actives sur 30 j`;
+
+  const dern = d.executions[0];
+  const direct = $("direct");
+  if (dern) {
+    $("k-dernier").textContent = heure(dern.demarreLe);
+    $("k-dernier-sous").textContent = `${depuis(dern.demarreLe)} · ${dern.publies} publié(s)`;
+    const enRetard = Date.now() - new Date(dern.demarreLe) > 75 * 60 * 1000;
+    const ko = !!dern.erreur || enRetard;
+    direct.classList.toggle("ko", ko);
+    $("direct-texte").textContent = dern.erreur ? "Bot en erreur" : enRetard ? "Bot silencieux depuis plus d’une heure" : "Bot actif";
+  } else {
+    $("k-dernier").textContent = "—";
+    $("k-dernier-sous").textContent = "aucun passage enregistré";
+    direct.classList.remove("ko");
+    $("direct-texte").textContent = "En attente du premier passage";
+  }
+
+  grapheJours(d.serie);
+  grapheSources(d.parSource);
+  ruban(d.executions);
+  etatFlux(d.sources, d.sourcesVerifieesLe);
+  fil(d.recentes);
+  $("genere").textContent = `Données du ${new Date(d.genereLe).toLocaleString("fr-FR")}`;
+}
+
+async function charger() {
+  const bouton = $("rafraichir");
+  bouton.disabled = true; bouton.textContent = "↻ Chargement…";
+  try {
+    const res = await fetch("/api/tableau-de-bord", { cache: "no-store" });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.erreur || `HTTP ${res.status}`);
+    $("alerte").style.display = "none";
+    afficher(d);
+  } catch (err) {
+    $("alerte").textContent = `Impossible de charger les données (${err.message}). Nouvel essai dans une minute.`;
+    $("alerte").style.display = "block";
+    $("direct").classList.add("ko");
+    $("direct-texte").textContent = "Hors connexion";
+  } finally {
+    bouton.disabled = false; bouton.textContent = "↻ Actualiser";
+  }
+}
+
+$("date-du-jour").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+$("rafraichir").addEventListener("click", charger);
+let redim;
+addEventListener("resize", () => { clearTimeout(redim); redim = setTimeout(() => donnees && grapheJours(donnees.serie), 150); });
+squelettes();
+charger();
+setInterval(charger, 60_000);
+</script>
+</body>
 </html>
